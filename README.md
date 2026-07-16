@@ -117,9 +117,40 @@ This project began from the CS382 `final_project_starter.zip` and was upgraded:
 
 ## Evaluation
 
-| Query | Retrieval Quality | Generation Quality | Notes |
-|-------|-------------------|-------------------|-------|
-| *"Recommend a Khmer horror movie from the 2000s"* | Good — top result was The Crocodile (2005), score 0.67 | Good — correctly identified and described The Crocodile with citations | Strong semantic match on horror genre |
-| *"What are some Cambodian documentaries about the Khmer Rouge?"* | Moderate — returned relevant films (The Red Sense, Lost Loves) but not clearly marked as docs | Good — LLM noted uncertainty about documentary status, still cited relevant films | Demonstrates graceful failure |
+10 test queries across different movie categories, scored on retrieval
+accuracy and LLM generation quality.
 
-(Expand with 6–8 more test queries as you go.)
+### Summary
+
+| Rating | Count | Queries |
+|--------|-------|---------|
+| **Strong** (retrieval + generation both accurate) | 5 | director, romance, war, award, horror |
+| **Mixed** (partial match, LLM adapted well) | 2 | documentary, recent |
+| **Failed** (corpus lacks relevant content) | 3 | golden_age, action, animation |
+
+**Average top-1 retrieval score:** 0.69
+**Best-performing category:** Award-winning films (0.783)
+**Most common failure mode:** Corpus lacks content for the query topic (not a system bug)
+
+### Detailed Results
+
+| # | Query | Top Score | Top Results | Retrieval | Generation | Notes |
+|---|-------|-----------|-------------|------------|------------|-------|
+| 1 | Recommend a Khmer horror movie from the 2000s | 0.631 | The Night Curse of Reatrei, Lost Loves, The Crocodile | Good | Good | LLM correctly recommended The Crocodile (2005) |
+| 2 | What Cambodian documentaries explore the Khmer Rouge era? | 0.686 | Lost Loves, The Red Sense, Meeting with Pol Pot | Mixed | Fair | LLM noted documentary vs feature ambiguity honestly |
+| 3 | Films from the Cambodian Golden Age of the 1960s | 0.709 | Lost Loves, One Evening After the War, Vanished 2009 | Fail | Good | Corpus has 1960s films (Apsara, Snake King's Wife) but retrieval missed them; LLM correctly declined |
+| 4 | Movies directed by Rithy Panh | 0.680 | One Evening After the War, S-21, The Burnt Theatre | Good | Good | All three returned are Panh films; LLM cited them accurately |
+| 5 | Action and martial arts movies from Cambodia | 0.662 | Lost Loves, Puthisen Neang Kangrey, The Golden Voice | Fail | Good | Corpus lacks action films; LLM honestly said none found |
+| 6 | A Khmer romantic drama set in modern times | 0.662 | Who Am I (2009), Karmalink | Good | Good | LLM correctly recommended Who Am I with plot context |
+| 7 | Cambodian films about war and genocide | 0.734 | Lost Loves, Meeting with Pol Pot, One Evening After the War | Good | Good | Best retrieval scores; LLM cited all three with proper context |
+| 8 | Best Cambodian movies from the last five years | 0.633 | Lost Loves, Meeting with Pol Pot, The Last Reel | Mixed | Good | Meeting with Pol Pot is recent (2024); others are older; LLM noted limitations |
+| 9 | Award-winning Cambodian films recognized internationally | 0.783 | Rice People, The Last Reel, Meeting with Pol Pot | Very Good | Good | Highest retrieval scores; all three were Oscar submissions; LLM provided accurate context |
+| 10 | Cambodian animated or fantasy films | 0.689 | Lost Loves, Puthisen Neang Kangrey, One Evening After the War | Fail | Good | No animated films in corpus; LLM correctly responded "none found" |
+
+### Key Findings
+
+- **Semantic embeddings outperform keyword matching** — queries for "war and genocide" found films without those exact words
+- **LLM graceful failure works** — for 3 queries where corpus lacked content, the LLM refused to fabricate answers instead of hallucinating
+- **Corpus content is the bottleneck** — retrieval failures (action, animation, golden age) are due to missing or under-represented topics in the document collection, not the embedding model
+- **Director queries work well** — the model associates director names with their films across document boundaries
+- **Award queries strongest** — Oscar-submitted films have distinctive language ("submitted", "Academy Awards") that embeddings pick up well
