@@ -48,7 +48,7 @@ with st.sidebar:
     else:
         api_key = ""
     st.divider()
-    st.caption(f"Indexed **{len(docs)}** movies \u2192 **{len(chunks)}** chunks")
+    st.caption(f"Indexed **{len(docs)}** movies → **{len(chunks)}** chunks")
     with st.expander("Movies in this index"):
         for d in docs:
             st.write(f"- {d['title']}")
@@ -68,7 +68,7 @@ if search_clicked and query.strip():
 
     st.subheader("Sources")
     for chunk, score in retrieved:
-        with st.expander(f"{chunk.doc_title}  \u00b7  similarity {score:.2f}"):
+        with st.expander(f"{chunk.doc_title}  ·  similarity {score:.2f}"):
             st.write(chunk.text)
 elif search_clicked:
     st.warning("Type a question first.")
