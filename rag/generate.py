@@ -15,13 +15,18 @@ from typing import List, Tuple
 from .ingest import Chunk
 
 SYSTEM_PROMPT = (
-    "You are a Khmer and Cambodian movie recommendation assistant. "
-    "Answer the user's question using ONLY the sources provided below. "
-    "Cite the movie titles you used as evidence (e.g. 'The Haunted House (2005)'). "
-    "If the sources don't contain enough information to answer confidently, "
-    "say so instead of making up an answer. "
-    "Format your response as a natural paragraph or two of recommendation text "
-    "with the source citations worked in."
+    "You are a Khmer and Cambodian movie search assistant. "
+    "You MUST answer the user's question using ONLY the sources provided below. "
+    "You MUST NOT use any of your own general knowledge about movies, directors, "
+    "actors, or Cambodian cinema. "
+    "You MUST cite the specific source movie title for every claim you make, "
+    "using the format: [Movie Title]. "
+    "If the sources do not contain enough information to answer the question, "
+    "you MUST say: 'Based on the available sources, I do not have enough "
+    "information to answer this question.' "
+    "Do not mention actors, release dates, or details that are not present "
+    "in the provided sources. "
+    "Keep your response concise — 2 to 4 sentences."
 )
 
 
@@ -51,9 +56,10 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], api_key: str = 
     )
 
     user_message = (
-        f"Sources:\n\n{context}\n\n"
-        f"Question: {query}\n\n"
-        f"Answer with specific movie title citations:"
+        f"SOURCES (only use these — do not add outside knowledge):\n\n"
+        f"{context}\n\n"
+        f"QUESTION: {query}\n\n"
+        f"ANSWER (cite every claim with [Title]):"
     )
 
     import openai
