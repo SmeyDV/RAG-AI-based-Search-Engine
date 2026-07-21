@@ -23,15 +23,30 @@ Open the URL Streamlit prints (usually `http://localhost:8501`).
 
 ### LLM mode (recommended)
 
-Switch the sidebar to **llm** mode and paste your DeepSeek API key in the
-password field. Answers will be generated with citations instead of just
-showing raw passages.
+Create a local `.env` file from the included template and add your DeepSeek API
+key:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` so it contains:
+
+```dotenv
+DEEPSEEK_API_KEY=sk-your-real-key
+```
+
+Then start the app with `streamlit run app.py` and switch the sidebar to **llm**
+mode. The `.env` file is ignored by Git, and the key is never entered or
+displayed in the application. An environment variable set by the deployment
+platform takes precedence over `.env`. Without either value, LLM mode falls
+back to extractive results.
 
 ---
 
 ## Dataset
 
-59 Khmer and Cambodian movie documents spanning **1966–2024**, including:
+65 Khmer and Cambodian movie documents spanning **1966–2024**, including:
 
 | Era | Examples |
 |-----|----------|
@@ -39,10 +54,30 @@ showing raw passages.
 | 1990s Revival | Rice People, Bophana, One Evening After the War |
 | 2000s Horror Boom | The Crocodile, Nieng Arp, Ghost Banana Tree |
 | 2010s International | Diamond Island, First They Killed My Father, Jailbreak |
-| 2020s | White Building, Karmalink, Tenement, Meeting with Pol Pot |
+| 2020s | White Building, Karmalink, Tenement, Meeting with Pol Pot, Return to Seoul |
 
-Each document contains: title (English + Khmer), year, director, genre, cast,
-plot summary, reception, and awards.
+Each source document may contain a title (English + Khmer), year, director,
+genre, cast, plot summary, reception, awards, and source URLs. The ingestion
+layer normalizes available values into consistent metadata; unknown values stay
+empty rather than being guessed.
+
+### Structured metadata
+
+`rag/ingest.py` converts the legacy text documents into records with a stable
+movie ID, canonical/display titles, alternate titles, year, directors, genres,
+countries, languages, runtime, cast, source URLs, plot, overview, awards, and
+reception. Every retrieval chunk retains this metadata and includes the most
+important fields in its searchable text.
+
+To regenerate the portable JSON Lines dataset:
+
+```bash
+python3 scripts/export_movies.py
+```
+
+The generated dataset is written to `data/movies.jsonl`, with one movie object
+per line, a schema version, its source filename, and the original text retained
+in `raw_text` for auditing. `data/movie.schema.json` documents the record shape.
 
 ---
 
@@ -52,7 +87,8 @@ plot summary, reception, and awards.
 Khmer Movie Search/
 ├── app.py                   # Streamlit interface
 ├── requirements.txt
-├── data/sample_docs/        # 59 Khmer movie .txt files
+├── data/sample_docs/        # 65 legacy Khmer movie .txt files
+├── data/movies.jsonl        # Normalized structured movie metadata
 └── rag/
     ├── ingest.py            # Load .txt files, word-count chunking (80 word chunks, 20 word overlap)
     ├── embed_store.py       # SentenceTransformer (all-MiniLM-L6-v2) embeddings + cosine similarity search
@@ -94,7 +130,7 @@ Khmer Movie Search/
 - **Plain text only** — only `.txt` files are loaded (no PDF support yet)
 - **Word-count chunking** — fixed 80-word chunks with 20-word overlap;
   sentence-aware chunking would improve coherence
-- **In-memory vector store** — fine for 298 chunks, but won't scale past a few
+- **In-memory vector store** — fine for 302 chunks, but won't scale past a few
   thousand; upgrade to FAISS or Chroma for larger corpora
 - **English-only** — documents and queries are in English; a multilingual
   embedding model and Khmer-language content would need a model swap
@@ -109,8 +145,8 @@ This project began from the CS382 `final_project_starter.zip` and was upgraded:
 | Layer | Starter | Current |
 |-------|---------|---------|
 | Embeddings | TF-IDF (keyword) | sentence-transformers `all-MiniLM-L6-v2` (semantic) |
-| LLM | Stub / extractive only | DeepSeek API with citation generation |
-| Dataset | 4 sample English docs | 59 Khmer/Cambodian movie documents |
+| LLM | Stub / extractive only | DeepSeek API via server environment with citation generation |
+| Dataset | 4 sample English docs | 65 Khmer/Cambodian movie documents |
 | Interface | Generic "RAG Search" | "Khmer Movie Search" with API key input |
 
 ---
@@ -118,7 +154,8 @@ This project began from the CS382 `final_project_starter.zip` and was upgraded:
 ## Evaluation
 
 10 test queries across different movie categories, scored on retrieval
-accuracy and LLM generation quality.
+accuracy and LLM generation quality. These results are the baseline from before
+the July 2026 dataset expansion and should be rerun against the current corpus.
 
 ### Summary
 

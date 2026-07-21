@@ -8,8 +8,6 @@ Searches a collection of Khmer and Cambodian films using semantic embeddings
 (sentence-transformers) and optionally generates recommendations via DeepSeek.
 """
 
-import os
-
 import streamlit as st
 
 from rag.ingest import load_documents, build_chunk_records
@@ -36,22 +34,15 @@ with st.sidebar:
     st.header("Settings")
     top_k = st.slider("Number of chunks to retrieve", min_value=1, max_value=10, value=3)
     mode = st.radio("Answer mode", ["extractive", "llm"], index=0,
-                     help="Extractive works with no setup. LLM mode uses DeepSeek API.")
+                     help="Extractive needs no setup. LLM mode uses DEEPSEEK_API_KEY from the environment.")
     if mode == "llm":
-        api_key = st.text_input(
-            "DeepSeek API Key", type="password",
-            placeholder="sk-...",
-            help="Enter your DeepSeek API key. Not stored permanently."
-        )
-        if not api_key:
-            api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    else:
-        api_key = ""
+        st.caption("DeepSeek credentials are loaded from the server environment.")
     st.divider()
     st.caption(f"Indexed **{len(docs)}** movies \u2192 **{len(chunks)}** chunks")
     with st.expander("Movies in this index"):
         for d in docs:
-            st.write(f"- {d['title']}")
+            year = d["metadata"].get("year")
+            st.write(f"- {d['title']} ({year})" if year else f"- {d['title']}")
 
 st.title("🎬 Khmer Movie Search")
 st.caption("Search for Cambodian and Khmer-language films by plot, genre, director, or era.")
@@ -61,7 +52,7 @@ search_clicked = st.button("Search", type="primary")
 
 if search_clicked and query.strip():
     retrieved = store.query(query, top_k=top_k)
-    answer = generate_answer(query, retrieved, mode=mode, api_key=api_key)
+    answer = generate_answer(query, retrieved, mode=mode)
 
     st.subheader("Answer")
     st.write(answer)
@@ -69,6 +60,18 @@ if search_clicked and query.strip():
     st.subheader("Sources")
     for chunk, score in retrieved:
         with st.expander(f"{chunk.doc_title}  \u00b7  similarity {score:.2f}"):
+            metadata = chunk.metadata
+            details = []
+            if metadata.get("year"):
+                details.append(str(metadata["year"]))
+            if metadata.get("directors"):
+                details.append("Directed by " + ", ".join(metadata["directors"]))
+            if metadata.get("genres"):
+                details.append("Genres: " + ", ".join(metadata["genres"]))
+            if details:
+                st.caption(" \u00b7 ".join(details))
             st.write(chunk.text)
+            for source_url in metadata.get("source_urls", []):
+                st.markdown(f"[Dataset source]({source_url})")
 elif search_clicked:
     st.warning("Type a question first.")
