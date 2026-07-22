@@ -46,20 +46,31 @@ back to extractive results.
 
 ## Dataset
 
-65 Khmer and Cambodian movie documents spanning **1966–2024**, including:
+**332** Khmer and Cambodian movie documents spanning **1962–2024** — near-complete
+coverage of the full history of Khmer cinema:
 
-| Era | Examples |
-|-----|----------|
-| 1960s–70s Golden Age | Apsara, Puthisen Neang Kangrey, The Snake King's Wife |
-| 1990s Revival | Rice People, Bophana, One Evening After the War |
-| 2000s Horror Boom | The Crocodile, Nieng Arp, Ghost Banana Tree |
-| 2010s International | Diamond Island, First They Killed My Father, Jailbreak |
-| 2020s | White Building, Karmalink, Tenement, Meeting with Pol Pot, Return to Seoul |
+| Era | Coverage / Examples |
+|-----|---------------------|
+| 1960s Golden Age (1962–1969) | Year-by-year coverage — Apsara, Puthisen Neang Kangrey (12 Sisters), Sovannahong, Prey Prasith |
+| 1970s (pre–Khmer Rouge) | Complete through 1974 — The Snake King's Wife, Bopha Angkor (action), Chnam Oun 16 |
+| 1980s Revival | Post–Khmer Rouge rebuild — Shadow of Darkness (first KR-era fiction film), Rithy Panh's Site 2 |
+| 1990s | Rice People, Bophana, One Evening After the War, Blank Page |
+| 2000s Horror Boom | The Crocodile, Nieng Arp, Ghost Banana Tree, Neang Neat |
+| 2010s International | Diamond Island, First They Killed My Father, Jailbreak, The Prey |
+| 2020s | White Building, Karmalink, Funan, Return to Seoul, Meeting with Pol Pot |
 
 Each source document may contain a title (English + Khmer), year, director,
 genre, cast, plot summary, reception, awards, and source URLs. The ingestion
 layer normalizes available values into consistent metadata; unknown values stay
 empty rather than being guessed.
+
+**Grounding convention.** Many golden-age films survive only as metadata (most
+prints were destroyed under the Khmer Rouge), so their entries carry verified
+title/year/director/cast/genre plus an explicit *"no detailed plot summary has
+been published"* note — never an invented plot. Golden-age films adapted from
+documented Khmer legends (e.g. Preah Thong & Neang Neak, Kakey, the Reamker, the
+Twelve Sisters) instead include the **source legend's story**, clearly labeled as
+such. This keeps the RAG app grounded and prevents hallucinated citations.
 
 ### Structured metadata
 
@@ -87,7 +98,7 @@ in `raw_text` for auditing. `data/movie.schema.json` documents the record shape.
 Khmer Movie Search/
 ├── app.py                   # Streamlit interface
 ├── requirements.txt
-├── data/sample_docs/        # 65 legacy Khmer movie .txt files
+├── data/sample_docs/        # 332 Khmer movie .txt files
 ├── data/movies.jsonl        # Normalized structured movie metadata
 └── rag/
     ├── ingest.py            # Load .txt files, word-count chunking (80 word chunks, 20 word overlap)
@@ -130,8 +141,8 @@ Khmer Movie Search/
 - **Plain text only** — only `.txt` files are loaded (no PDF support yet)
 - **Word-count chunking** — fixed 80-word chunks with 20-word overlap;
   sentence-aware chunking would improve coherence
-- **In-memory vector store** — fine for 302 chunks, but won't scale past a few
-  thousand; upgrade to FAISS or Chroma for larger corpora
+- **In-memory vector store** — fine for the current ~635 chunks, but won't scale
+  past a few thousand; upgrade to FAISS or Chroma for larger corpora
 - **English-only** — documents and queries are in English; a multilingual
   embedding model and Khmer-language content would need a model swap
 - **No conversation history** — each query is independent
@@ -146,7 +157,7 @@ This project began from the CS382 `final_project_starter.zip` and was upgraded:
 |-------|---------|---------|
 | Embeddings | TF-IDF (keyword) | sentence-transformers `all-MiniLM-L6-v2` (semantic) |
 | LLM | Stub / extractive only | DeepSeek API via server environment with citation generation |
-| Dataset | 4 sample English docs | 65 Khmer/Cambodian movie documents |
+| Dataset | 4 sample English docs | 332 Khmer/Cambodian movie documents (1962–2024) |
 | Interface | Generic "RAG Search" | "Khmer Movie Search" with API key input |
 
 ---
@@ -155,7 +166,12 @@ This project began from the CS382 `final_project_starter.zip` and was upgraded:
 
 10 test queries across different movie categories, scored on retrieval
 accuracy and LLM generation quality. These results are the baseline from before
-the July 2026 dataset expansion and should be rerun against the current corpus.
+the July 2026 dataset expansion (65 → 332 films) and should be rerun against the
+current corpus. Notably, the three failure categories below — **golden age**,
+**action**, and **animation** — were failing purely because the corpus lacked
+that content; the expansion directly targets all three (full 1960s–70s golden-age
+coverage, action titles such as The Prey and Bopha Angkor, and the animated film
+Funan), so those queries are expected to improve on a rerun.
 
 ### Summary
 
